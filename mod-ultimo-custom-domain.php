@@ -4,17 +4,17 @@
   */
 
 // Add option to $ccl_options
-ccl_create_option('ccl_enable_ultimo_domain_customizations', 'off', 'Ultimo Custom Domain Customizations');
+ccl_create_option('ccl_enable_ultimo_custom_domain', 'off', 'Ultimo Custom Domain Customizations');
+	ccl_create_option_value('ccl_enable_ultimo_custom_domain_support_email', get_site_option('admin_email'), 'Support Email'); // Use wordpress network email as default
+ccl_create_option_value('ccl_enable_ultimo_custom_domain_server_ip', $_SERVER['SERVER_ADDR'] , 'Server IP to point custom domain to, default is $_SERVER[\'SERVER_ADDR\']');
+ccl_create_option_value('ccl_enable_ultimo_custom_domain_registrar_name', 'Namecheap', 'Registrar Name');
+ccl_create_option_value('ccl_enable_ultimo_custom_domain_registrar_url', 'https://namecheap.com', 'Registrar URL');
 
 /**
   *  Ultimo Custom Domain Customizations
   */
-if ( get_site_option('ccl_enable_ultimo_domain_customizations', 'off') == "on" ) {
-
-	if (!defined('CUSTOM_DOMAIN_EMAIL')) {
-		define('CUSTOM_DOMAIN_EMAIL', 'info@bizlaunchuniversity.com');
-	}
-
+if ( get_site_option('ccl_enable_ultimo_custom_domain', 'off') == "on" ) {
+	
 	/* CIDR */
 
 	/**
@@ -257,11 +257,11 @@ if ( get_site_option('ccl_enable_ultimo_domain_customizations', 'off') == "on" )
 		}
 	}
 
-	#wu_custom_domain_after
-	function custom_domain_text () {
-		$server_addr = $_SERVER['SERVER_ADDR'];
-		# Note: In order to set a Custom Domain Name you must have purchased and pointed your custom domain name already. 
-		# Do not use this for changing a sub domain name! To do that contact info@bizlaunchuniversity.com and request a sub domain name change.
+	// wu_custom_domain_after
+	function custom_domain_text ($ultimo_custom_domain_support_email, $ultimo_custom_domain_server_ip) {		
+		$ultimo_custom_domain_support_email=get_site_option('ccl_enable_ultimo_custom_domain_support_email', 'blank');
+		$ultimo_custom_domain_server_ip=get_site_option('ccl_enable_ultimo_custom_domain_server_ip', $_SERVER['SERVER_ADDR']);
+
 		$custom_domain = wu_get_current_site()->get_meta('custom-domain');
 
 		if ($custom_domain) {    
@@ -324,123 +324,131 @@ if ( get_site_option('ccl_enable_ultimo_domain_customizations', 'off') == "on" )
 		}
 		
 		# Check root domain is pointed and present success or error message.
-		if ($main_domain[0]['ip'] == $server_addr) {
+		if ($main_domain[0]['ip'] == $ultimo_custom_domain_server_ip) {
 			echo "<div class=\"custom-domain-success\">SUCCESS: $custom_domain is pointed properly!</div>";
 		} elseif (CDIRLoop($main_domain[0]['ip'],$cloudflare_cidr)) {
-			echo "<div class=\"custom-domain-warning\">WARNING: $custom_domain is on Cloudflare, make sure you have $custom_domain pointed at $server_addr within Cloudflare</div>";
+			echo "<div class=\"custom-domain-warning\">WARNING: $custom_domain is on Cloudflare, make sure you have $custom_domain pointed at $ultimo_custom_domain_server_ip within Cloudflare</div>";
 		} else {
-			echo "<div class=\"custom-domain-error\">ERROR: $custom_domain is not pointed to $server_addr, please check your DNS!</div>";
+			echo "<div class=\"custom-domain-error\">ERROR: $custom_domain is not pointed to $ultimo_custom_domain_server_ip, please check your DNS!</div>";
 		}
 
 		if (in_array($www_domain[0]['ip'],$cloudflare_ips)) {
-			echo "<div class=\"custom-domain-warning\">WARNING: www.$custom_domain is on Cloudflare, make sure you have www.$custom_domain pointed at $server_addr within Cloudflare</div>";
-		} elseif ($www_domain[0]['ip'] == $server_addr) {
+			echo "<div class=\"custom-domain-warning\">WARNING: www.$custom_domain is on Cloudflare, make sure you have www.$custom_domain pointed at $ultimo_custom_domain_server_ip within Cloudflare</div>";
+		} elseif ($www_domain[0]['ip'] == $ultimo_custom_domain_server_ip) {
 			echo "<div class=\"custom-domain-success\">SUCCESS: www.$custom_domain is pointed properly!</div>";
 		} else {
-			echo "<div class=\"custom-domain-error\">ERROR: www.$custom_domain is not pointed to $server_addr</div>";
+			echo "<div class=\"custom-domain-error\">ERROR: www.$custom_domain is not pointed to $ultimo_custom_domain_server_ip</div>";
 		}
 		
 		echo "<br><br>";
 		echo "<div class=\"custom-domain-status\">Support</div>";
 		echo "<div class=\"custom-domain-text\">Note: In order to set a Custom Domain Name you must have purchased and pointed your custom domain name already.";
-		echo "<br><br>Do not use this for changing a sub domain name! To do that contact <a href=\"malto:" . CUSTOM_DOMAIN_EMAIL . "\">". CUSTOM_DOMAIN_EMAIL ."</a> and request a sub domain name change.";
+		echo "<br><br>Do not use this for changing a sub domain name! To do that contact <a href=\"malto:" . $ultimo_custom_domain_support_email . "\">". $ultimo_custom_domain_support_email ."</a> and request a sub domain name change.";
 		echo "<br><br>For more information on to use this feature visit.</div>";
 		echo "<div class=\"custom-domain-link\"><a href=\"https://support.bluinf.com\" target=\"_blank\">Technical Support</a></div>";
 		
 		}
 	}
-
 	add_action( 'wu_custom_domain_after', 'custom_domain_text', 10, 2 );
 
 	function custom_domain_text_css () {
-	echo '<style>
-	.custom-domain-step {
-		font-size: 15px!important;
-		color: black!important;
-	}
-	.custom-domain-step p {
-	font-size: 14px!important;
-		color: black!important;
-	}
-	.custom-domain-status {
-			font-size: 16px !important;
-			color: black !important;
-			background: #ddd;
-			text-align: center;
-			font-weight:bold !important;
-	}
-
-	.custom-domain-success {
-			font-size: 14px !important;
-			color: black !important;
-			background: lightgreen;
-			text-align: center;
-			font-weight:bold !important;  
-	}
-	.custom-domain-warning {
-			font-size: 14px !important;
-			color: black !important;
-			background: yellow;
-			text-align: center;
-			font-weight:bold !important;
-	} 
-	.custom-domain-error {
-			font-size: 14px !important;
-			color: black !important;
-			background: red;
-			text-align: center;
-			font-weight:bold !important;
-	}
-
-	.custom-domain-check {
-			font-size: 14px !important;
-			color: black !important;
-			background: #white;
-			text-align:center;
-	}
-	.custom-domain-text {
-			font-size: 14px!important;
+		echo '<style>
+		.custom-domain-step {
+			font-size: 15px!important;
 			color: black!important;
-			font-weight: bold;
-			text-align: center;
 		}
-		.custom-domain-link {
-			font-size: 16px!important;
+		.custom-domain-step p {
+		font-size: 14px!important;
 			color: black!important;
-			background-color: white;
-			font-weight: bold;
-			text-align: center;
 		}
-	</style>';
-	}
+		.custom-domain-status {
+				font-size: 16px !important;
+				color: black !important;
+				background: #ddd;
+				text-align: center;
+				font-weight:bold !important;
+		}
 
+		.custom-domain-success {
+				font-size: 14px !important;
+				color: black !important;
+				background: lightgreen;
+				text-align: center;
+				font-weight:bold !important;  
+		}
+		.custom-domain-warning {
+				font-size: 14px !important;
+				color: black !important;
+				background: yellow;
+				text-align: center;
+				font-weight:bold !important;
+		} 
+		.custom-domain-error {
+				font-size: 14px !important;
+				color: black !important;
+				background: red;
+				text-align: center;
+				font-weight:bold !important;
+		}
+
+		.custom-domain-check {
+				font-size: 14px !important;
+				color: black !important;
+				background: #white;
+				text-align:center;
+		}
+		.custom-domain-text {
+				font-size: 14px!important;
+				color: black!important;
+				font-weight: bold;
+				text-align: center;
+			}
+			.custom-domain-link {
+				font-size: 16px!important;
+				color: black!important;
+				background-color: white;
+				font-weight: bold;
+				text-align: center;
+			}
+		</style>';
+	}
 	add_action('admin_head', 'custom_domain_text_css');
 
-	/*function update_ultimo_point () {
-	"Point an A Record to the following IP Address <code>%s</code>." */
+	/*
+	function update_ultimo_point () {
+	"Point an A Record to the following IP Address <code>%s</code>." 
+	*/
 
+	/** 
+	 * Change Custom Domain Text
+	 */
 	function change_custom_domain_text ( $translated_text, $text, $domain ) {
-	if( $translated_text == 'You can use a custom domain with your website.') {
-		$server_addr = WU_Settings::get_setting('network_ip');
-		$translated_text = "";
-		echo "<div class=\"custom-domain-status\">Custom Domain Instructions</div>";
-		echo "<div class=\"custom-domain-step\" style=\"color:red!important;\"><b><center>Caution: This is not for changing your sub-domain .</center></b></div>";
-		echo "<br>";
-		echo "<div class=\"custom-domain-step\"><b>Step 1</b> - Register your domain name at <a href=\"https://namecheap.com/\">Namecheap</a></div>";
-		echo "<br>";
-		echo "<div class=\"custom-domain-step\"><b>Step 2</b> - Change your domain names DNS to the following:";
-		echo "<p>Create an <b>A</b> Record for <b>@</b> to point to <b>$server_addr</b>";
-		echo "<br>Create an <b>A</b> Record for <b>www</b> to point to <b>$server_addr</b></div>";
-		echo "<div class=\"custom-domain-step\"><b>Step 3</b> - Enter in your domain name and extension (yoursite.com) below. Do not enter in www in the front of your domain.</div>";
-	}
+		$ultimo_custom_domain_support_email=get_site_option('ccl_enable_ultimo_custom_domain_support_email', 'blank');
+		$ultimo_custom_domain_server_ip=get_site_option('ccl_enable_ultimo_custom_domain_server_ip', $_SERVER['SERVER_ADDR']);
+		$ultimo_custom_domain_registrar_name=get_site_option('ccl_enable_ultimo_custom_domain_registrar_name', 'Namecheap');
+		$ultimo_custom_domain_registrar_url=get_site_option('ccl_enable_ultimo_custom_domain_registrar_url', 'https://namecheap.com');
 
-	if( $translated_text == 'Point an A Record to the following IP Address <code>%s</code>.') {
-		$translated_text = "";
-	}
-	if( $translated_text == 'You can also create a CNAME record on your domain pointing to our domain <code>%s</code>.') {
-		$translated_text = "";
-	}
-	return $translated_text;
+		if( $translated_text == 'You can use a custom domain with your website.') {
+			$ultimo_custom_domain_server_ip = WU_Settings::get_setting('network_ip');
+			$translated_text = "";
+			echo "<div class=\"custom-domain-status\">Custom Domain Instructions</div>";
+			echo "<div class=\"custom-domain-step\" style=\"color:red!important;\"><b><center>Caution: This is not for changing your sub-domain .</center></b></div>";
+			echo "<br>";
+			echo "<div class=\"custom-domain-step\"><b>Step 1</b> - Register your domain name at <a href=\"$ultimo_custom_domain_registrar_url\">$ultimo_custom_domain_registrar_name</a></div>";
+			echo "<br>";
+			echo "<div class=\"custom-domain-step\"><b>Step 2</b> - Change your domain names DNS to the following:";
+			echo "<p>Create an <b>A</b> Record for <b>@</b> to point to <b>$ultimo_custom_domain_server_ip</b>";
+			echo "<br>Create an <b>A</b> Record for <b>www</b> to point to <b>$ultimo_custom_domain_server_ip</b></div>";
+			echo "<div class=\"custom-domain-step\"><b>Step 3</b> - Enter in your domain name and extension (yoursite.com) below. Do not enter in www in the front of your domain.</div>";
+		}
+
+		if( $translated_text == 'Point an A Record to the following IP Address <code>%s</code>.') {
+			$translated_text = "";
+		}
+		if( $translated_text == 'You can also create a CNAME record on your domain pointing to our domain <code>%s</code>.') {
+			$translated_text = "";
+		}
+		return $translated_text;
 	}
 	add_filter( 'gettext', 'change_custom_domain_text', 20, 3 );
 
